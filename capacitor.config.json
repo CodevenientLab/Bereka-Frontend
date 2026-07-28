@@ -1,0 +1,6 @@
+{
+  "appId": "com.codevenient.bereka",
+  "appName": "Bereka",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
