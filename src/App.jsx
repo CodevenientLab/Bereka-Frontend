@@ -25,39 +25,58 @@ import {
   X,
   Eye,
   EyeOff,
-  Map as MapIcon, // Added to support your new Radar/Map toggles
-  Target
+  Map as MapIcon,
 } from 'lucide-react';
 import { FaGoogle, FaFacebook, FaApple, FaWhatsapp } from 'react-icons/fa6';
-
-// Import Google Maps Components seamlessly
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 
 // INITIAL SEED ARTISANS WITH SOUTH AFRICAN COUNTRY CODE NUMBERS FOR WHATSAPP LINKING
 const initialArtisans = [
   { id: 1, name: 'Thabo Molefe', role: 'Plumber', rating: 4.8, reviews: 24, distance: 1.2, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150', bio: 'Specialist in residential plumbing, leak detection, and emergency repairs with over 5 years of active service in the Mmabatho area.', rate: 'R250/hr', specialties: ['Leak Detection', 'Geyser Repair', 'Blocked Drains'], phone: '27812345678', position: { lat: -25.8560, lng: 25.6403 } },
   { id: 2, name: 'John Doe', role: 'Electrician', rating: 4.9, reviews: 42, distance: 3.2, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', bio: 'Certified commercial and domestic electrician. Expert in DB board upgrades, household wiring, and certificate of compliance (CoC) issuing.', rate: 'R300/hr', specialties: ['DB Boards', 'House Wiring', 'CoC Certificates'], phone: '27729876543', position: { lat: -25.8420, lng: 25.6610 } },
-  { id: 3, name: 'Jane Smith', role: 'Painter', rating: 4.7, reviews: 18, distance: 8.5, isVerified: false, status: 'Busy', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', bio: 'Professional interior and exterior structural coatings designer. Dedicated to clean preparation pipelines and premium finishing textures.', rate: 'R220/hr', specialties: ['Interior Painting', 'Wall Texturing', 'Waterproofing'], phone: '27619876543', position: { lat: -25.8710, lng: 25.6290 } }
+  { id: 3, name: 'Jane Smith', role: 'Painter', rating: 4.7, reviews: 18, distance: 8.5, isVerified: false, status: 'Busy', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', bio: 'Professional interior and exterior structural coatings designer. Dedicated to clean preparation pipelines and premium finishing textures.', rate: 'R220/hr', specialties: ['Interior Painting', 'Wall Texturing', 'Waterproofing'], phone: '27619876543', position: { lat: -25.8710, lng: 25.6290 } },
+  { id: 4, name: 'Sipho Ndlovu', role: 'Plumber', rating: 4.6, reviews: 15, distance: 4.5, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150', bio: 'Handles new installations, pipe fitting, and full bathroom remodel plumbing for homes and small offices around Mahikeng.', rate: 'R240/hr', specialties: ['Pipe Fitting', 'Bathroom Remodels', 'Leak Detection'], phone: '27823456781', position: { lat: -25.8480, lng: 25.6350 } },
+  { id: 5, name: 'Naledi Mokoena', role: 'Plumber', rating: 4.3, reviews: 9, distance: 12.0, isVerified: false, status: 'Busy', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', bio: 'Independent plumber covering blocked drains and geyser replacements, with flexible weekend callouts.', rate: 'R210/hr', specialties: ['Blocked Drains', 'Geyser Repair'], phone: '27834567892', position: { lat: -25.8650, lng: 25.6520 } },
+  { id: 6, name: 'Karabo Mahlangu', role: 'Electrician', rating: 4.5, reviews: 20, distance: 6.1, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', bio: 'Focuses on fault finding and generator installations for both residential backup power and small commercial sites.', rate: 'R280/hr', specialties: ['Fault Finding', 'Generator Installs'], phone: '27845678903', position: { lat: -25.8390, lng: 25.6470 } },
+  { id: 7, name: 'Precious Dlamini', role: 'Electrician', rating: 4.9, reviews: 33, distance: 2.0, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150', bio: 'CoC-certified electrician specializing in DB board upgrades and full house rewiring for older properties.', rate: 'R320/hr', specialties: ['DB Boards', 'House Wiring', 'CoC Certificates'], phone: '27856789014', position: { lat: -25.8530, lng: 25.6380 } },
+  { id: 8, name: 'Nomsa Khumalo', role: 'Cleaning', rating: 4.8, reviews: 27, distance: 1.8, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', bio: 'Runs a small deep-cleaning team covering homes and offices, with same-week availability most weeks.', rate: 'R180/hr', specialties: ['Deep Cleaning', 'Office Cleaning'], phone: '27867890125', position: { lat: -25.8575, lng: 25.6415 } },
+  { id: 9, name: 'Grace Mokwena', role: 'Cleaning', rating: 4.4, reviews: 11, distance: 9.4, isVerified: false, status: 'Busy', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', bio: 'Specialist in post-construction and move-in/move-out cleaning for new builds and renovations.', rate: 'R160/hr', specialties: ['Post-Construction', 'Window Cleaning'], phone: '27878901236', position: { lat: -25.8620, lng: 25.6280 } },
+  { id: 10, name: 'Ayanda Zulu', role: 'Cleaning', rating: 4.6, reviews: 19, distance: 3.3, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150', bio: 'Offers scheduled weekly and bi-weekly cleaning packages, plus one-off carpet and upholstery washes.', rate: 'R190/hr', specialties: ['Carpet Wash', 'Deep Cleaning'], phone: '27889012347', position: { lat: -25.8500, lng: 25.6440 } },
+  { id: 11, name: 'Tumelo Baloyi', role: 'Handyman', rating: 4.7, reviews: 22, distance: 5.0, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', bio: 'General handyman for furniture assembly, drywall patchwork, and small home repairs — quick turnaround.', rate: 'R230/hr', specialties: ['Furniture Assembly', 'Drywall Repair'], phone: '27890123458', position: { lat: -25.8455, lng: 25.6520 } },
+  { id: 12, name: 'Kagiso Ramaphosa', role: 'Handyman', rating: 4.2, reviews: 6, distance: 14.7, isVerified: false, status: 'Busy', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', bio: 'Handles tiling, door hanging, and bracket mounting jobs across the wider Mmabatho area.', rate: 'R200/hr', specialties: ['Tiling', 'Door Hanging', 'Bracket Mounting'], phone: '27801234569', position: { lat: -25.8700, lng: 25.6600 } },
+  { id: 13, name: 'Refilwe Sithole', role: 'Mechanic', rating: 4.8, reviews: 31, distance: 2.9, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150', bio: 'Mobile mechanic offering brake service and diagnostics call-outs, no need to tow your car to a shop.', rate: 'R260/hr', specialties: ['Brake Service', 'Diagnostics'], phone: '27812345601', position: { lat: -25.8545, lng: 25.6360 } },
+  { id: 14, name: 'Bongani Mthembu', role: 'Mechanic', rating: 4.5, reviews: 17, distance: 7.6, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', bio: 'Engine tuning and suspension repair specialist with a background in fleet maintenance.', rate: 'R240/hr', specialties: ['Engine Tuning', 'Suspension Repair'], phone: '27823456712', position: { lat: -25.8375, lng: 25.6250 } },
+  { id: 15, name: 'Lindiwe Nkosi', role: 'Mechanic', rating: 4.1, reviews: 8, distance: 18.2, isVerified: false, status: 'Busy', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', bio: 'Budget-friendly oil changes and general diagnostics, mostly serving the outer Mahikeng suburbs.', rate: 'R210/hr', specialties: ['Oil Change', 'Diagnostics'], phone: '27834567823', position: { lat: -25.8800, lng: 25.6700 } },
+  { id: 16, name: 'Pieter van Wyk', role: 'Painter', rating: 4.6, reviews: 14, distance: 6.8, isVerified: true, status: 'Available', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', bio: 'Exterior and spray-finish specialist, often working on larger residential repaint projects.', rate: 'R230/hr', specialties: ['Exterior Painting', 'Spray Finishing'], phone: '27845678934', position: { lat: -25.8320, lng: 25.6550 } }
 ];
 
-const categories = ['Plumber', 'Electrician', 'Cleaning', 'Handyman', 'Mechanic'];
+const categories = ['Plumber', 'Electrician', 'Cleaning', 'Handyman', 'Mechanic', 'Painter'];
+const filterCategories = ['All', ...categories];
 
 const specialtyPresets = {
   Plumber: ['Leak Detection', 'Geyser Repair', 'Blocked Drains', 'Pipe Fitting', 'Bathroom Remodels'],
   Electrician: ['DB Boards', 'House Wiring', 'CoC Certificates', 'Generator Installs', 'Fault Finding'],
   Cleaning: ['Deep Cleaning', 'Carpet Wash', 'Office Cleaning', 'Post-Construction', 'Window Cleaning'],
   Handyman: ['Furniture Assembly', 'Door Hanging', 'Drywall Repair', 'Tiling', 'Bracket Mounting'],
-  Mechanic: ['Brake Service', 'Engine Tuning', 'Oil Change', 'Diagnostics', 'Suspension Repair']
+  Mechanic: ['Brake Service', 'Engine Tuning', 'Oil Change', 'Diagnostics', 'Suspension Repair'],
+  Painter: ['Interior Painting', 'Exterior Painting', 'Wall Texturing', 'Waterproofing', 'Spray Finishing']
 };
 
-const MAP_ID = "YOUR_GOOGLE_MAP_ID"; 
-const API_KEY = "YOUR_GOOGLE_MAPS_API_KEY";
+// Safe localStorage reader — falls back gracefully if storage is unavailable (private browsing, etc.)
+const loadFromStorage = (key, fallback) => {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+};
 
 export default function App() {
   // Navigation states
   const [viewMode, setViewMode] = useState('splash');
-  const [exploreSubView, setExploreSubView] = useState('explore'); // 'explore' or 'map'
-  const [selectedCategory, setSelectedCategory] = useState('Plumber');
+  const [exploreSubView, setExploreSubView] = useState('explore'); // 'explore' or 'nearby'
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Customization Theme States - Initial balance between system defaults and manual user preferences
   const [darkMode, setDarkMode] = useState(() => {
@@ -77,12 +96,13 @@ export default function App() {
   // App Notification Toast System State
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
 
-  // Mock User Database
-  const [users, setUsers] = useState([
+  // Mock User Database — seeded on first run, then persisted to localStorage
+  const defaultUsers = [
     { phoneNumber: '812345678', password: 'Password123', fullName: 'Bongani Nduna', location: 'Mahikeng, North West', role: 'client' },
     { phoneNumber: '729876543', password: 'AdminSecure!', fullName: 'Lerato Sekho', location: 'Mmabatho, North West', role: 'artisan' }
-  ]);
-  const [artisans, setArtisans] = useState(initialArtisans);
+  ];
+  const [users, setUsers] = useState(() => loadFromStorage('bereka_users', defaultUsers));
+  const [artisans, setArtisans] = useState(() => loadFromStorage('bereka_artisans', initialArtisans));
 
   // Form input states
   const [isRegistering, setIsRegistering] = useState(false);
@@ -99,12 +119,16 @@ export default function App() {
   const [pendingArtisanAccount, setPendingArtisanAccount] = useState(null);
 
   const [showPassword, setShowPassword] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => loadFromStorage('bereka_current_user', null));
   const [selectedArtisan, setSelectedArtisan] = useState(null);
-  
-  const [activeBookings, setActiveBookings] = useState([
+  const [bookingModalArtisan, setBookingModalArtisan] = useState(null);
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingNote, setBookingNote] = useState('');
+
+  const defaultBookings = [
     { id: 101, artisan: initialArtisans[0], date: 'Today, 14:00', status: 'Confirmed' }
-  ]);
+  ];
+  const [activeBookings, setActiveBookings] = useState(() => loadFromStorage('bereka_bookings', defaultBookings));
 
   // Sync state mutations directly to HTML DOM context tree
   useEffect(() => {
@@ -159,13 +183,36 @@ export default function App() {
     }
   }, [toast.show]);
 
-  // Splash Screen Timer
+  // Splash Screen Timer — skip straight into the app if a session was already saved
   useEffect(() => {
     if (viewMode === 'splash') {
-      const timer = setTimeout(() => setViewMode('login'), 2200);
+      const timer = setTimeout(() => {
+        setViewMode(currentUser ? 'main' : 'login');
+      }, 1400);
       return () => clearTimeout(timer);
     }
-  }, [viewMode]);
+  }, [viewMode, currentUser]);
+
+  // Persistence: keep mock "backend" state alive across reloads
+  useEffect(() => {
+    localStorage.setItem('bereka_users', JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem('bereka_artisans', JSON.stringify(artisans));
+  }, [artisans]);
+
+  useEffect(() => {
+    localStorage.setItem('bereka_bookings', JSON.stringify(activeBookings));
+  }, [activeBookings]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('bereka_current_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('bereka_current_user');
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (viewMode === 'login') {
@@ -195,6 +242,12 @@ export default function App() {
   const handleSignIn = (e) => {
     e.preventDefault();
     const cleanPhoneInput = getCleanPhone(phoneNumber);
+
+    if (cleanPhoneInput.length !== 9) {
+      showNotification('Invalid Number: Enter a valid 9-digit South African mobile number.', 'error');
+      return;
+    }
+
     const foundUser = users.find(user => user.phoneNumber === cleanPhoneInput);
 
     if (!foundUser) {
@@ -234,6 +287,16 @@ export default function App() {
     }
 
     const cleanPhoneInput = getCleanPhone(phoneNumber);
+    if (cleanPhoneInput.length !== 9) {
+      showNotification('Invalid Number: Enter a valid 9-digit South African mobile number.', 'error');
+      return;
+    }
+
+    if (password.length < 6) {
+      showNotification('Weak Password: Use at least 6 characters.', 'error');
+      return;
+    }
+
     const userExists = users.some(user => user.phoneNumber === cleanPhoneInput);
 
     if (userExists) {
@@ -302,18 +365,27 @@ export default function App() {
 
   // MULTI-LAYER FILTER CHAIN INTERCEPTOR (Trade -> Distance Boundary -> Verification Tag)
   const filteredArtisans = artisans.filter(art => {
-    if (art.role !== selectedCategory) return false;
+    if (selectedCategory !== 'All' && art.role !== selectedCategory) return false;
     if (art.distance > maxDistance) return false;
     if (onlyShowVerified && !art.isVerified) return false;
+    if (searchQuery.trim() && !art.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) return false;
     return true;
   });
+
+  // Used by the Nearby (proximity board) view — sorted closest-first, grouped into distance bands
+  const sortedByDistance = [...filteredArtisans].sort((a, b) => a.distance - b.distance);
+  const proximityBands = [
+    { label: 'Nearby', min: 0, max: 5 },
+    { label: 'Moderate Distance', min: 5, max: 15 },
+    { label: 'Further Out', min: 15, max: Infinity }
+  ];
 
   const renderAppContent = () => {
     switch(viewMode) {
       case 'main':
         return (
           <>
-            <header className="px-6 py-4 flex justify-between items-center border-b sticky top-0 z-20 bg-white border-slate-100 dark:bg-slate-900 dark:border-slate-800">
+            <header className="liquid-glass px-6 py-4 flex justify-between items-center border-b sticky top-0 z-20 border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
                 <Logo className="w-8 h-8 rounded-lg animate-fluid-fade" />
                 <h1 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">Bereka</h1>
@@ -322,7 +394,7 @@ export default function App() {
                 {/* Desktop View Switcher Controls integrated fluidly inside the top row */}
                 <div className="border p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 dark:border-slate-700/60 hidden sm:flex items-center">
                   <button onClick={() => setExploreSubView('explore')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${exploreSubView === 'explore' ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-900 dark:text-white' : 'text-slate-500'}`}><Home className="w-3.5 h-3.5" /> List</button>
-                  <button onClick={() => setExploreSubView('map')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${exploreSubView === 'map' ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-900 dark:text-white' : 'text-slate-500'}`}><MapIcon className="w-3.5 h-3.5" /> Radar</button>
+                  <button onClick={() => setExploreSubView('nearby')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${exploreSubView === 'nearby' ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-900 dark:text-white' : 'text-slate-500'}`}><MapIcon className="w-3.5 h-3.5" /> Nearby</button>
                 </div>
 
                 <div className="hidden sm:flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
@@ -342,41 +414,73 @@ export default function App() {
               </div>
             </header>
 
-            {exploreSubView === 'map' ? (
-              /* DYNAMIC FULL HEIGHT INTERACTIVE MAP VIEW CONTROLLER */
-              <div className="flex-1 w-full h-full relative bg-slate-100 dark:bg-slate-900 animate-fluid-fade">
-                <APIProvider apiKey={API_KEY}>
-                  <Map
-                    defaultCenter={{ lat: -25.8560, lng: 25.6403 }}
-                    defaultZoom={13}
-                    mapId={MAP_ID}
-                    disableDefaultUI={true}
-                    className="w-full h-full"
-                  >
-                    {/* User Location Node */}
-                    <AdvancedMarker position={{ lat: -25.8560, lng: 25.6403 }}>
-                      <div className="relative flex items-center justify-center">
-                        <div className="absolute w-6 h-6 bg-emerald-500/30 rounded-full animate-ping" />
-                        <div className="w-4 h-4 bg-emerald-600 rounded-full border-2 border-white shadow-md" />
-                      </div>
-                    </AdvancedMarker>
+            {exploreSubView === 'nearby' ? (
+              /* PROXIMITY BOARD — distance-sorted, banded by range, no external map dependency */
+              <main className="flex-1 overflow-y-auto px-6 py-6 space-y-6 pb-24 md:pb-6 bg-slate-50/50 dark:bg-slate-950 animate-fluid-fade">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Proximity Board{selectedCategory !== 'All' ? ` · ${selectedCategory}` : ''}</h2>
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">{filteredArtisans.length} found</span>
+                </div>
 
-                    {/* Render Artisan Pin Nodes dynamically inside vector grid layout */}
-                    {filteredArtisans.map((artisan) => (
-                      <AdvancedMarker
-                        key={artisan.id}
-                        position={artisan.position || { lat: -25.8560, lng: 25.6403 }}
-                        onClick={() => { setSelectedArtisan(artisan); setViewMode('artisan-detail'); }}
-                      >
-                        <div className="smooth-liquid-element px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 shadow-lg border border-slate-200 dark:border-slate-800 font-bold text-[10px] text-slate-800 dark:text-white flex items-center gap-1 cursor-pointer hover:scale-110">
-                          <Target className="w-3 h-3 text-emerald-500" />
-                          <span>{artisan.name.split(' ')[0]}</span>
+                {filteredArtisans.length === 0 ? (
+                  <div className="p-8 text-center border rounded-2xl text-xs font-medium bg-white border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-500">
+                    No {selectedCategory === 'All' ? '' : `${selectedCategory} `}profiles match current filter matrix radius boundaries.
+                  </div>
+                ) : (
+                  proximityBands.map((band) => {
+                    const bandArtisans = sortedByDistance.filter(a => a.distance > band.min && a.distance <= band.max);
+                    if (bandArtisans.length === 0) return null;
+                    return (
+                      <div key={band.label} className="space-y-2.5">
+                        <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {band.label}
+                          <span className="text-slate-300 dark:text-slate-700 font-normal normal-case tracking-normal">({bandArtisans.length})</span>
+                        </h3>
+                        <div className="space-y-2.5">
+                          {bandArtisans.map((artisan) => (
+                            <div
+                              key={artisan.id}
+                              onClick={() => { setSelectedArtisan(artisan); setViewMode('artisan-detail'); }}
+                              className="smooth-liquid-card group cursor-pointer flex items-center gap-4 p-4 rounded-2xl border bg-white border-slate-200/60 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800/60 dark:hover:border-slate-700 shadow-sm"
+                            >
+                              <img src={artisan.image} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0 transition-transform duration-500 group-hover:scale-105" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <h4 className="font-semibold text-sm text-slate-900 dark:text-white truncate">{artisan.name}</h4>
+                                  {artisan.isVerified && (
+                                    <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[8px] tracking-wider uppercase px-1.5 py-0.5 rounded flex-shrink-0">Pro</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <div className="flex-1 max-w-[140px] h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                    <div
+                                      className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                                      style={{ width: `${Math.min(100, (artisan.distance / maxDistance) * 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-slate-400 font-mono flex-shrink-0">{artisan.distance} km</span>
+                                </div>
+                              </div>
+                              <div className="hidden sm:flex items-center gap-1 text-xs text-amber-500 font-medium flex-shrink-0">
+                                <Star className="w-3.5 h-3.5 fill-amber-500 stroke-amber-500" />
+                                <span className="text-slate-700 dark:text-slate-300">{artisan.rating}</span>
+                              </div>
+                              <span className="hidden md:block text-emerald-600 dark:text-emerald-500 font-bold text-xs flex-shrink-0">{artisan.rate}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); redirectToWhatsApp(artisan); }}
+                                title="Chat on WhatsApp"
+                                className="smooth-liquid-element p-2.5 rounded-xl border flex items-center justify-center bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-400 dark:hover:bg-emerald-900/30 hover:scale-105 active:scale-95 flex-shrink-0"
+                              >
+                                <FaWhatsapp className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      </AdvancedMarker>
-                    ))}
-                  </Map>
-                </APIProvider>
-              </div>
+                      </div>
+                    );
+                  })
+                )}
+              </main>
             ) : (
               /* MAIN EXPLORE COMPONENT FRAME DIRECTORY */
               <main className="flex-1 overflow-y-auto px-6 py-6 space-y-6 pb-24 md:pb-6 bg-slate-50/50 dark:bg-slate-950">
@@ -392,9 +496,21 @@ export default function App() {
                     </span>
                     <input 
                       type="text" 
-                      placeholder={`Search within ${selectedCategory} class options...`} 
-                      className="smooth-liquid-element w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 border-slate-200 focus:bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:focus:bg-slate-900"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={selectedCategory === 'All' ? 'Search all trades...' : `Search within ${selectedCategory} class options...`} 
+                      className="smooth-liquid-element w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 border-slate-200 focus:bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:focus:bg-slate-900"
                     />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        aria-label="Clear search"
+                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -402,7 +518,7 @@ export default function App() {
                 <div className="space-y-2">
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Industry Classification Scope</h3>
                   <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                    {categories.map((cat) => {
+                    {filterCategories.map((cat) => {
                       const isSelected = selectedCategory === cat;
                       return (
                         <button
@@ -463,10 +579,10 @@ export default function App() {
                   
                   {filteredArtisans.length === 0 ? (
                     <div className="p-8 text-center border rounded-2xl text-xs font-medium bg-white border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-500 animate-fluid-fade">
-                      No verified {selectedCategory} profiles match current filter matrix radius boundaries.
+                      No verified {selectedCategory === 'All' ? '' : `${selectedCategory} `}profiles match current filter matrix radius boundaries.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
                       {filteredArtisans.map((artisan, index) => (
                         <div 
                           key={artisan.id} 
@@ -508,12 +624,7 @@ export default function App() {
                             </button>
                             
                             <button 
-                              onClick={() => {
-                                const newBooking = { id: Date.now(), artisan, date: 'Pending Client Brief', status: 'Confirmed' };
-                                setActiveBookings([newBooking, ...activeBookings]);
-                                setViewMode('bookings');
-                                showNotification(`Booking ticket opened for ${artisan.name}!`, 'success');
-                              }} 
+                              onClick={() => setBookingModalArtisan(artisan)} 
                               className="smooth-liquid-element flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold tracking-wide shadow-sm text-center dark:bg-emerald-600 dark:hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98]"
                             >
                               Contract Setup
@@ -547,13 +658,21 @@ export default function App() {
                   <p className="text-sm text-slate-500 font-medium">{selectedArtisan.role} Specialist</p>
                 </div>
                 
-                <button 
-                  onClick={() => redirectToWhatsApp(selectedArtisan)} 
-                  className="smooth-liquid-element p-3.5 rounded-xl shadow-sm border flex items-center justify-center self-start sm:self-auto bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 hover:scale-105 active:scale-95"
-                  title="Open WhatsApp Workspace"
-                >
-                  <FaWhatsapp className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2.5 self-start sm:self-auto">
+                  <button 
+                    onClick={() => redirectToWhatsApp(selectedArtisan)} 
+                    className="smooth-liquid-element p-3.5 rounded-xl shadow-sm border flex items-center justify-center bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-400 dark:hover:bg-emerald-900/30 hover:scale-105 active:scale-95"
+                    title="Open WhatsApp Workspace"
+                  >
+                    <FaWhatsapp className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setBookingModalArtisan(selectedArtisan)}
+                    className="smooth-liquid-element px-5 py-3.5 rounded-xl shadow-sm border bg-emerald-600 border-emerald-600 text-white text-xs font-bold tracking-wide hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 hover:scale-105 active:scale-95"
+                  >
+                    Contract Setup
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4 border-y py-4 max-w-md border-slate-100 dark:border-slate-800">
@@ -597,13 +716,18 @@ export default function App() {
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">Active Bookings</h2>
             </header>
             <main className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 dark:bg-slate-950">
-              {activeBookings.map((b) => (
+              {activeBookings.length === 0 ? (
+                <div className="p-8 text-center border rounded-2xl text-xs font-medium bg-white border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-500 animate-fluid-fade">
+                  No active bookings yet. Explore the directory to book a trade professional.
+                </div>
+              ) : activeBookings.map((b) => (
                 <div key={b.id} className="smooth-liquid-card p-5 rounded-2xl border flex justify-between items-center shadow-sm bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800">
                   <div className="flex items-center gap-3">
                     <img src={b.artisan.image} alt="" className="w-12 h-12 rounded-xl object-cover" />
                     <div>
                       <h4 className="font-semibold text-sm text-slate-900 dark:text-white">{b.artisan.name}</h4>
                       <p className="text-xs text-slate-400 font-medium">{b.artisan.role} • {b.date}</p>
+                      {b.note && <p className="text-[11px] text-slate-400 italic mt-0.5">"{b.note}"</p>}
                     </div>
                   </div>
                   <span className="text-[10px] font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded-md flex items-center gap-1 uppercase tracking-wide">
@@ -622,6 +746,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex justify-center items-center p-0 md:p-8 antialiased relative overflow-hidden bg-slate-50 transition-colors duration-500 dark:bg-slate-950">
+
+      {/* Ambient liquid blobs — decorative depth behind the app card, same palette, no new colors */}
+      <div className="hidden md:block absolute -top-40 -left-40 w-[28rem] h-[28rem] bg-emerald-400/20 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="hidden md:block absolute -bottom-40 -right-40 w-[28rem] h-[28rem] bg-emerald-300/20 dark:bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
       
       {/* ADVANCED SMOOTHING AND LIQUID TIMING CURVES STYLE SHEET */}
       <style>{`
@@ -737,7 +865,13 @@ export default function App() {
 
             <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button 
-                onClick={() => { setIsProfileDrawerOpen(false); setCurrentUser(null); setViewMode('login'); }}
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to log out?')) {
+                    setIsProfileDrawerOpen(false);
+                    setCurrentUser(null);
+                    setViewMode('login');
+                  }
+                }}
                 className="smooth-liquid-element w-full py-3 border border-rose-500/20 text-rose-500 bg-rose-500/5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-rose-500/10 hover:scale-102"
               >
                 <LogOut className="w-4 h-4" /> Log out of Session
@@ -746,6 +880,65 @@ export default function App() {
                 Bereka Native Platform • build_v0.0.1-prod
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* BOOKING CONFIRMATION MODAL */}
+      {bookingModalArtisan && (
+        <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fluid-fade">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white">Book {bookingModalArtisan.name}</h3>
+              <button
+                onClick={() => { setBookingModalArtisan(null); setBookingDate(''); setBookingNote(''); }}
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                aria-label="Close booking dialog"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="booking-date" className="text-[10px] font-bold text-slate-400 uppercase">Preferred Date & Time</label>
+              <input
+                id="booking-date"
+                type="datetime-local"
+                required
+                value={bookingDate}
+                onChange={(e) => setBookingDate(e.target.value)}
+                className="smooth-liquid-element w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="booking-note" className="text-[10px] font-bold text-slate-400 uppercase">Job Notes (optional)</label>
+              <textarea
+                id="booking-note"
+                rows="3"
+                value={bookingNote}
+                onChange={(e) => setBookingNote(e.target.value)}
+                placeholder="Briefly describe the job..."
+                className="smooth-liquid-element w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl text-sm resize-none focus:outline-none"
+              />
+            </div>
+            <button
+              onClick={() => {
+                if (!bookingDate) {
+                  showNotification('Missing Date: Choose a preferred date and time.', 'error');
+                  return;
+                }
+                const formattedDate = new Date(bookingDate).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' });
+                const newBooking = { id: Date.now(), artisan: bookingModalArtisan, date: formattedDate, note: bookingNote.trim(), status: 'Confirmed' };
+                setActiveBookings([newBooking, ...activeBookings]);
+                setBookingModalArtisan(null);
+                setBookingDate('');
+                setBookingNote('');
+                setViewMode('bookings');
+                showNotification(`Booking confirmed with ${bookingModalArtisan.name}!`, 'success');
+              }}
+              className="smooth-liquid-element w-full py-3 bg-slate-900 dark:bg-emerald-600 text-white font-semibold text-xs uppercase rounded-xl shadow-lg hover:scale-[1.01]"
+            >
+              Confirm Booking
+            </button>
           </div>
         </div>
       )}
@@ -769,10 +962,10 @@ export default function App() {
         </div>
       )}
 
-      <div className="w-full max-w-7xl h-screen md:h-[840px] rounded-none md:rounded-3xl shadow-[0_24px_70px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_70px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row relative border transition-all duration-500 bg-white border-slate-200 dark:bg-slate-950 dark:border-slate-800">
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] h-screen md:h-[88vh] md:max-h-[920px] md:min-h-[640px] rounded-none md:rounded-3xl shadow-[0_24px_70px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_70px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row relative z-10 border transition-all duration-500 bg-white/95 backdrop-blur-xl border-slate-200 dark:bg-slate-950/95 dark:border-slate-800">
         
         {viewMode !== 'splash' && viewMode !== 'login' && viewMode !== 'artisan-setup' && (
-          <aside className="hidden md:flex flex-col justify-between w-64 bg-slate-900 text-slate-400 p-6 border-r border-slate-800">
+          <aside className="hidden md:flex flex-col justify-between w-64 xl:w-72 bg-slate-900 text-slate-400 p-6 border-r border-slate-800">
             <div className="space-y-8">
               <div className="flex items-center gap-3 text-white px-2">
                 <Logo className="w-8 h-8 object-contain mix-blend-multiply dark:mix-blend-screen" />
@@ -864,17 +1057,17 @@ export default function App() {
                   )}
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Mobile Number</label>
+                    <label htmlFor="login-phone" className="text-[10px] font-bold text-slate-400 uppercase">Mobile Number</label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 text-xs font-bold border-r border-slate-200 dark:border-slate-700 pr-3 my-2.5">+27</span>
-                      <input type="tel" required placeholder="81 234 5678" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="smooth-liquid-element w-full pl-20 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none" />
+                      <input id="login-phone" type="tel" required placeholder="81 234 5678" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="smooth-liquid-element w-full pl-20 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none" />
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Password</label>
+                    <label htmlFor="login-password" className="text-[10px] font-bold text-slate-400 uppercase">Password</label>
                     <div className="relative">
-                      <input type={showPassword ? "text" : "password"} required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="smooth-liquid-element w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none" />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 text-slate-400 hover:text-slate-600 transition-colors duration-300">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                      <input id="login-password" type={showPassword ? "text" : "password"} required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="smooth-liquid-element w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute inset-y-0 right-0 pr-4 text-slate-400 hover:text-slate-600 transition-colors duration-300">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                     </div>
                   </div>
 
@@ -908,9 +1101,9 @@ export default function App() {
           {viewMode !== 'splash' && viewMode !== 'login' && viewMode !== 'artisan-setup' && renderAppContent()}
 
           {viewMode !== 'splash' && viewMode !== 'login' && viewMode !== 'artisan-setup' && (
-            <nav className="absolute bottom-0 inset-x-0 border-t px-6 py-3 flex justify-between items-center text-slate-400 z-30 md:hidden bg-white/95 backdrop-blur-md border-slate-100 dark:bg-slate-900/95 dark:border-slate-800">
+            <nav className="liquid-glass absolute bottom-0 inset-x-0 border-t px-6 py-3 flex justify-between items-center text-slate-400 z-30 md:hidden border-slate-100 dark:border-slate-800">
               <button onClick={() => { setViewMode('main'); setExploreSubView('explore'); }} className={`flex flex-col items-center gap-1 text-[10px] smooth-liquid-element ${viewMode === 'main' && exploreSubView === 'explore' ? 'text-emerald-600' : ''}`}><Home className="w-5 h-5" /><span>List</span></button>
-              <button onClick={() => { setViewMode('main'); setExploreSubView('map'); }} className={`flex flex-col items-center gap-1 text-[10px] smooth-liquid-element ${viewMode === 'main' && exploreSubView === 'map' ? 'text-emerald-600' : ''}`}><MapIcon className="w-5 h-5" /><span>Radar</span></button>
+              <button onClick={() => { setViewMode('main'); setExploreSubView('nearby'); }} className={`flex flex-col items-center gap-1 text-[10px] smooth-liquid-element ${viewMode === 'main' && exploreSubView === 'nearby' ? 'text-emerald-600' : ''}`}><MapIcon className="w-5 h-5" /><span>Nearby</span></button>
               <button onClick={() => setViewMode('bookings')} className={`flex flex-col items-center gap-1 text-[10px] smooth-liquid-element ${viewMode === 'bookings' ? 'text-emerald-600' : ''}`}><Calendar className="w-5 h-5" /><span>Bookings</span></button>
               <button onClick={() => setIsProfileDrawerOpen(true)} className="flex flex-col items-center gap-1 text-[10px] smooth-liquid-element"><Settings className="w-5 h-5" /><span>Settings</span></button>
             </nav>
