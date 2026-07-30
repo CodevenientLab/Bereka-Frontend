@@ -26,6 +26,8 @@ import {
   Eye,
   EyeOff,
   Map as MapIcon,
+  Heart,
+  Pencil,
 } from 'lucide-react';
 import { FaGoogle, FaFacebook, FaApple, FaWhatsapp } from 'react-icons/fa6';
 
@@ -125,8 +127,16 @@ export default function App() {
   const [bookingDate, setBookingDate] = useState('');
   const [bookingNote, setBookingNote] = useState('');
 
+  const [favorites, setFavorites] = useState(() => loadFromStorage('bereka_favorites', []));
+  const [reviewModalBooking, setReviewModalBooking] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+
   const defaultBookings = [
-    { id: 101, artisan: initialArtisans[0], date: 'Today, 14:00', status: 'Confirmed' }
+    { id: 101, artisan: initialArtisans[0], date: 'Today, 14:00', status: 'Confirmed', clientPhone: '812345678', clientName: 'Bongani Nduna', reviewed: false }
   ];
   const [activeBookings, setActiveBookings] = useState(() => loadFromStorage('bereka_bookings', defaultBookings));
 
@@ -205,6 +215,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('bereka_bookings', JSON.stringify(activeBookings));
   }, [activeBookings]);
+
+  useEffect(() => {
+    localStorage.setItem('bereka_favorites', JSON.stringify(favorites));
+  }, [favorites]);
 
   useEffect(() => {
     if (currentUser) {
@@ -363,6 +377,54 @@ export default function App() {
     }
   };
 
+  const toggleFavorite = (artisanId) => {
+    setFavorites(prev => prev.includes(artisanId) ? prev.filter(id => id !== artisanId) : [...prev, artisanId]);
+  };
+
+  const cancelBooking = (bookingId) => {
+    if (!window.confirm('Cancel this booking?')) return;
+    setActiveBookings(activeBookings.map(b => b.id === bookingId ? { ...b, status: 'Cancelled' } : b));
+    showNotification('Booking cancelled.', 'info');
+  };
+
+  const completeJob = (bookingId) => {
+    setActiveBookings(activeBookings.map(b => b.id === bookingId ? { ...b, status: 'Completed' } : b));
+    showNotification('Job marked as completed.', 'success');
+  };
+
+  const submitReview = () => {
+    if (!reviewModalBooking) return;
+    const artisanId = reviewModalBooking.artisan.id;
+    setArtisans(artisans.map(a => {
+      if (a.id !== artisanId) return a;
+      const newReviews = a.reviews + 1;
+      const newRating = Number((((a.rating * a.reviews) + reviewRating) / newReviews).toFixed(1));
+      return { ...a, rating: newRating, reviews: newReviews };
+    }));
+    setActiveBookings(activeBookings.map(b => b.id === reviewModalBooking.id ? { ...b, reviewed: true, myRating: reviewRating } : b));
+    showNotification('Thanks for your review!', 'success');
+    setReviewModalBooking(null);
+    setReviewRating(5);
+  };
+
+  const startEditingProfile = () => {
+    setEditName(currentUser?.fullName || '');
+    setEditLocation(currentUser?.location || '');
+    setIsEditingProfile(true);
+  };
+
+  const saveProfileEdits = () => {
+    if (!editName.trim()) {
+      showNotification('Name cannot be empty.', 'error');
+      return;
+    }
+    const updatedUser = { ...currentUser, fullName: editName.trim(), location: editLocation.trim() || currentUser.location };
+    setCurrentUser(updatedUser);
+    setUsers(users.map(u => u.phoneNumber === currentUser.phoneNumber ? { ...u, fullName: updatedUser.fullName, location: updatedUser.location } : u));
+    setIsEditingProfile(false);
+    showNotification('Profile updated.', 'success');
+  };
+
   // MULTI-LAYER FILTER CHAIN INTERCEPTOR (Trade -> Distance Boundary -> Verification Tag)
   const filteredArtisans = artisans.filter(art => {
     if (selectedCategory !== 'All' && art.role !== selectedCategory) return false;
@@ -380,6 +442,12 @@ export default function App() {
     { label: 'Further Out', min: 15, max: Infinity }
   ];
 
+  // Used by the Saved tab
+  const savedArtisans = artisans.filter(a => favorites.includes(a.id));
+
+  // Used by the artisan-side "My Jobs" dashboard — bookings made against this artisan's own storefront
+  const myJobs = activeBookings.filter(b => b.artisan?.phone === `27${currentUser?.phoneNumber}`);
+
   const renderAppContent = () => {
     switch(viewMode) {
       case 'main':
@@ -395,6 +463,7 @@ export default function App() {
                 <div className="border p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 dark:border-slate-700/60 hidden sm:flex items-center">
                   <button onClick={() => setExploreSubView('explore')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${exploreSubView === 'explore' ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-900 dark:text-white' : 'text-slate-500'}`}><Home className="w-3.5 h-3.5" /> List</button>
                   <button onClick={() => setExploreSubView('nearby')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${exploreSubView === 'nearby' ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-900 dark:text-white' : 'text-slate-500'}`}><MapIcon className="w-3.5 h-3.5" /> Nearby</button>
+                  <button onClick={() => setExploreSubView('saved')} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${exploreSubView === 'saved' ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-900 dark:text-white' : 'text-slate-500'}`}><Heart className="w-3.5 h-3.5" /> Saved</button>
                 </div>
 
                 <div className="hidden sm:flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
@@ -467,6 +536,14 @@ export default function App() {
                               </div>
                               <span className="hidden md:block text-emerald-600 dark:text-emerald-500 font-bold text-xs flex-shrink-0">{artisan.rate}</span>
                               <button
+                                onClick={(e) => { e.stopPropagation(); toggleFavorite(artisan.id); }}
+                                title={favorites.includes(artisan.id) ? 'Remove from saved' : 'Save artisan'}
+                                aria-label={favorites.includes(artisan.id) ? 'Remove from saved' : 'Save artisan'}
+                                className="smooth-liquid-element p-2.5 rounded-xl border flex items-center justify-center bg-white border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 flex-shrink-0"
+                              >
+                                <Heart className={`w-4 h-4 ${favorites.includes(artisan.id) ? 'fill-rose-500 stroke-rose-500' : 'stroke-slate-400'}`} />
+                              </button>
+                              <button
                                 onClick={(e) => { e.stopPropagation(); redirectToWhatsApp(artisan); }}
                                 title="Chat on WhatsApp"
                                 className="smooth-liquid-element p-2.5 rounded-xl border flex items-center justify-center bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-400 dark:hover:bg-emerald-900/30 hover:scale-105 active:scale-95 flex-shrink-0"
@@ -479,6 +556,61 @@ export default function App() {
                       </div>
                     );
                   })
+                )}
+              </main>
+            ) : exploreSubView === 'saved' ? (
+              /* SAVED / FAVORITES BOARD */
+              <main className="flex-1 overflow-y-auto px-6 py-6 space-y-3 pb-24 md:pb-6 bg-slate-50/50 dark:bg-slate-950 animate-fluid-fade">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Saved Professionals</h2>
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">{savedArtisans.length} saved</span>
+                </div>
+
+                {savedArtisans.length === 0 ? (
+                  <div className="p-8 text-center border rounded-2xl text-xs font-medium bg-white border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-500">
+                    Nothing saved yet. Tap the heart icon on any profile to bookmark it here.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {savedArtisans.map((artisan) => (
+                      <div
+                        key={artisan.id}
+                        onClick={() => { setSelectedArtisan(artisan); setViewMode('artisan-detail'); }}
+                        className="smooth-liquid-card group cursor-pointer flex items-center gap-4 p-4 rounded-2xl border bg-white border-slate-200/60 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800/60 dark:hover:border-slate-700 shadow-sm"
+                      >
+                        <img src={artisan.image} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0 transition-transform duration-500 group-hover:scale-105" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="font-semibold text-sm text-slate-900 dark:text-white truncate">{artisan.name}</h4>
+                            {artisan.isVerified && (
+                              <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[8px] tracking-wider uppercase px-1.5 py-0.5 rounded flex-shrink-0">Pro</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-400 font-medium mt-0.5">{artisan.role} • {artisan.distance} km away</p>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-1 text-xs text-amber-500 font-medium flex-shrink-0">
+                          <Star className="w-3.5 h-3.5 fill-amber-500 stroke-amber-500" />
+                          <span className="text-slate-700 dark:text-slate-300">{artisan.rating}</span>
+                        </div>
+                        <span className="hidden md:block text-emerald-600 dark:text-emerald-500 font-bold text-xs flex-shrink-0">{artisan.rate}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleFavorite(artisan.id); }}
+                          title="Remove from saved"
+                          aria-label="Remove from saved"
+                          className="smooth-liquid-element p-2.5 rounded-xl border flex items-center justify-center bg-white border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 flex-shrink-0"
+                        >
+                          <Heart className="w-4 h-4 fill-rose-500 stroke-rose-500" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); redirectToWhatsApp(artisan); }}
+                          title="Chat on WhatsApp"
+                          className="smooth-liquid-element p-2.5 rounded-xl border flex items-center justify-center bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-400 dark:hover:bg-emerald-900/30 hover:scale-105 active:scale-95 flex-shrink-0"
+                        >
+                          <FaWhatsapp className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </main>
             ) : (
@@ -588,8 +720,16 @@ export default function App() {
                           key={artisan.id} 
                           onClick={() => { setSelectedArtisan(artisan); setViewMode('artisan-detail'); }}
                           style={{ animationDelay: `${index * 60}ms` }}
-                          className="smooth-liquid-card p-5 rounded-2xl border shadow-sm flex flex-col justify-between cursor-pointer group bg-white border-slate-200/50 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800/60 dark:hover:border-slate-700"
+                          className="smooth-liquid-card p-5 rounded-2xl border shadow-sm flex flex-col justify-between cursor-pointer group relative bg-white border-slate-200/50 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800/60 dark:hover:border-slate-700"
                         >
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleFavorite(artisan.id); }}
+                            title={favorites.includes(artisan.id) ? 'Remove from saved' : 'Save artisan'}
+                            aria-label={favorites.includes(artisan.id) ? 'Remove from saved' : 'Save artisan'}
+                            className="smooth-liquid-element absolute top-4 right-4 p-2 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-sm hover:scale-110 active:scale-95 z-10"
+                          >
+                            <Heart className={`w-4 h-4 ${favorites.includes(artisan.id) ? 'fill-rose-500 stroke-rose-500' : 'stroke-slate-400'}`} />
+                          </button>
                           <div className="flex items-start gap-4 mb-4">
                             <img src={artisan.image} alt="" className="w-16 h-16 rounded-xl object-cover border border-slate-100 dark:border-slate-800 transition-transform duration-500 group-hover:scale-105" />
                             <div className="space-y-1">
@@ -659,6 +799,14 @@ export default function App() {
                 </div>
                 
                 <div className="flex items-center gap-2.5 self-start sm:self-auto">
+                  <button
+                    onClick={() => toggleFavorite(selectedArtisan.id)}
+                    title={favorites.includes(selectedArtisan.id) ? 'Remove from saved' : 'Save artisan'}
+                    aria-label={favorites.includes(selectedArtisan.id) ? 'Remove from saved' : 'Save artisan'}
+                    className="smooth-liquid-element p-3.5 rounded-xl shadow-sm border flex items-center justify-center bg-white border-slate-200 text-slate-500 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 hover:scale-105 active:scale-95"
+                  >
+                    <Heart className={`w-5 h-5 ${favorites.includes(selectedArtisan.id) ? 'fill-rose-500 stroke-rose-500' : ''}`} />
+                  </button>
                   <button 
                     onClick={() => redirectToWhatsApp(selectedArtisan)} 
                     className="smooth-liquid-element p-3.5 rounded-xl shadow-sm border flex items-center justify-center bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-400 dark:hover:bg-emerald-900/30 hover:scale-105 active:scale-95"
@@ -709,35 +857,95 @@ export default function App() {
           </div>
         ) : null;
 
-      case 'bookings':
+      case 'bookings': {
+        const myBookings = activeBookings.filter(b => b.clientPhone === currentUser?.phoneNumber);
         return (
           <div className="flex-1 flex flex-col h-full bg-white dark:bg-slate-950 animate-fluid-fade">
-            <header className="px-6 py-4 border-b bg-white border-slate-100 dark:bg-slate-900 dark:border-slate-800">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Active Bookings</h2>
+            <header className="liquid-glass px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">My Bookings</h2>
             </header>
-            <main className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 dark:bg-slate-950">
-              {activeBookings.length === 0 ? (
+            <main className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-6">
+              {myBookings.length === 0 ? (
                 <div className="p-8 text-center border rounded-2xl text-xs font-medium bg-white border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-500 animate-fluid-fade">
                   No active bookings yet. Explore the directory to book a trade professional.
                 </div>
-              ) : activeBookings.map((b) => (
-                <div key={b.id} className="smooth-liquid-card p-5 rounded-2xl border flex justify-between items-center shadow-sm bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800">
-                  <div className="flex items-center gap-3">
-                    <img src={b.artisan.image} alt="" className="w-12 h-12 rounded-xl object-cover" />
-                    <div>
-                      <h4 className="font-semibold text-sm text-slate-900 dark:text-white">{b.artisan.name}</h4>
-                      <p className="text-xs text-slate-400 font-medium">{b.artisan.role} • {b.date}</p>
-                      {b.note && <p className="text-[11px] text-slate-400 italic mt-0.5">"{b.note}"</p>}
+              ) : myBookings.map((b) => (
+                <div key={b.id} className="smooth-liquid-card p-5 rounded-2xl border shadow-sm bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 space-y-3">
+                  <div className="flex justify-between items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img src={b.artisan.image} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-sm text-slate-900 dark:text-white truncate">{b.artisan.name}</h4>
+                        <p className="text-xs text-slate-400 font-medium">{b.artisan.role} • {b.date}</p>
+                        {b.note && <p className="text-[11px] text-slate-400 italic mt-0.5 truncate">"{b.note}"</p>}
+                      </div>
                     </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1 uppercase tracking-wide flex-shrink-0 ${
+                      b.status === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-500' : b.status === 'Completed' ? 'bg-slate-500/10 text-slate-500 dark:text-slate-400' : 'bg-rose-500/10 text-rose-500'
+                    }`}>
+                      <Clock className="w-3 h-3" /> {b.status}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded-md flex items-center gap-1 uppercase tracking-wide">
-                    <Clock className="w-3 h-3" /> {b.status}
-                  </span>
+                  {b.status === 'Confirmed' && (
+                    <button onClick={() => cancelBooking(b.id)} className="smooth-liquid-element w-full py-2.5 border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-900/40 dark:hover:bg-rose-950/30 rounded-xl text-xs font-bold">
+                      Cancel Booking
+                    </button>
+                  )}
+                  {b.status === 'Completed' && !b.reviewed && (
+                    <button onClick={() => { setReviewModalBooking(b); setReviewRating(5); }} className="smooth-liquid-element w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
+                      <Star className="w-3.5 h-3.5 fill-white stroke-white" /> Rate this Job
+                    </button>
+                  )}
+                  {b.status === 'Completed' && b.reviewed && (
+                    <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> You rated this job {b.myRating}★
+                    </div>
+                  )}
                 </div>
               ))}
             </main>
           </div>
         );
+      }
+
+      case 'jobs': {
+        return (
+          <div className="flex-1 flex flex-col h-full bg-white dark:bg-slate-950 animate-fluid-fade">
+            <header className="liquid-glass px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">My Jobs</h2>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Incoming bookings for your storefront</p>
+            </header>
+            <main className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-6">
+              {myJobs.length === 0 ? (
+                <div className="p-8 text-center border rounded-2xl text-xs font-medium bg-white border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-500 animate-fluid-fade">
+                  No job requests yet. Clients who book your storefront will show up here.
+                </div>
+              ) : myJobs.map((b) => (
+                <div key={b.id} className="smooth-liquid-card p-5 rounded-2xl border shadow-sm bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 space-y-3">
+                  <div className="flex justify-between items-start gap-3">
+                    <div>
+                      <h4 className="font-semibold text-sm text-slate-900 dark:text-white">{b.clientName || 'Client'}</h4>
+                      <p className="text-xs text-slate-400 font-medium">{b.date}</p>
+                      {b.note && <p className="text-[11px] text-slate-400 italic mt-1">"{b.note}"</p>}
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1 uppercase tracking-wide flex-shrink-0 ${
+                      b.status === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-500' : b.status === 'Completed' ? 'bg-slate-500/10 text-slate-500 dark:text-slate-400' : 'bg-rose-500/10 text-rose-500'
+                    }`}>
+                      <Clock className="w-3 h-3" /> {b.status}
+                    </span>
+                  </div>
+                  {b.status === 'Confirmed' && (
+                    <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <button onClick={() => completeJob(b.id)} className="smooth-liquid-element flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold">Mark Completed</button>
+                      <button onClick={() => cancelBooking(b.id)} className="smooth-liquid-element flex-1 py-2.5 border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-900/40 dark:hover:bg-rose-950/30 rounded-xl text-xs font-bold">Cancel</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </main>
+          </div>
+        );
+      }
 
       default:
         return null;
@@ -819,17 +1027,48 @@ export default function App() {
                   <Settings className="w-4 h-4 text-emerald-500" />
                   <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 dark:text-white">Account Matrix</h3>
                 </div>
-                <button onClick={() => setIsProfileDrawerOpen(false)} className="smooth-liquid-element p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition hover:scale-105 active:scale-95">
+                <button onClick={() => { setIsProfileDrawerOpen(false); setIsEditingProfile(false); }} className="smooth-liquid-element p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition hover:scale-105 active:scale-95">
                   <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
 
-              <div className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" alt="" className="w-12 h-12 object-cover rounded-xl" />
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">{currentUser?.fullName || 'Guest Identity'}</h4>
-                  <p className="text-[10px] text-slate-400 font-semibold">{currentUser?.location || 'Mahikeng, NW'}</p>
-                </div>
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 space-y-3">
+                {isEditingProfile ? (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" alt="" className="w-12 h-12 object-cover rounded-xl flex-shrink-0" />
+                      <div className="flex-1 space-y-2 min-w-0">
+                        <input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          placeholder="Full name"
+                          className="smooth-liquid-element w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold focus:outline-none"
+                        />
+                        <input
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          placeholder="Location"
+                          className="smooth-liquid-element w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={saveProfileEdits} className="smooth-liquid-element flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold">Save</button>
+                      <button onClick={() => setIsEditingProfile(false)} className="smooth-liquid-element flex-1 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold">Cancel</button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120" alt="" className="w-12 h-12 object-cover rounded-xl flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">{currentUser?.fullName || 'Guest Identity'}</h4>
+                      <p className="text-[10px] text-slate-400 font-semibold truncate">{currentUser?.location || 'Mahikeng, NW'}</p>
+                    </div>
+                    <button onClick={startEditingProfile} aria-label="Edit profile" title="Edit profile" className="smooth-liquid-element p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex-shrink-0">
+                      <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* LIVE LIGHT / DARK TOGGLE ACTION ITEM */}
@@ -868,6 +1107,7 @@ export default function App() {
                 onClick={() => {
                   if (window.confirm('Are you sure you want to log out?')) {
                     setIsProfileDrawerOpen(false);
+                    setIsEditingProfile(false);
                     setCurrentUser(null);
                     setViewMode('login');
                   }
@@ -927,7 +1167,7 @@ export default function App() {
                   return;
                 }
                 const formattedDate = new Date(bookingDate).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' });
-                const newBooking = { id: Date.now(), artisan: bookingModalArtisan, date: formattedDate, note: bookingNote.trim(), status: 'Confirmed' };
+                const newBooking = { id: Date.now(), artisan: bookingModalArtisan, date: formattedDate, note: bookingNote.trim(), status: 'Confirmed', clientPhone: currentUser?.phoneNumber, clientName: currentUser?.fullName, reviewed: false };
                 setActiveBookings([newBooking, ...activeBookings]);
                 setBookingModalArtisan(null);
                 setBookingDate('');
@@ -938,6 +1178,42 @@ export default function App() {
               className="smooth-liquid-element w-full py-3 bg-slate-900 dark:bg-emerald-600 text-white font-semibold text-xs uppercase rounded-xl shadow-lg hover:scale-[1.01]"
             >
               Confirm Booking
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* REVIEW / RATING MODAL — shown after client marks a completed booking to rate */}
+      {reviewModalBooking && (
+        <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fluid-fade">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white">Rate {reviewModalBooking.artisan.name}</h3>
+              <button
+                onClick={() => setReviewModalBooking(null)}
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                aria-label="Close review dialog"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setReviewRating(n)}
+                  aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                  className="smooth-liquid-element hover:scale-110 active:scale-95"
+                >
+                  <Star className={`w-8 h-8 ${n <= reviewRating ? 'fill-amber-500 stroke-amber-500' : 'stroke-slate-300 dark:stroke-slate-700'}`} />
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={submitReview}
+              className="smooth-liquid-element w-full py-3 bg-slate-900 dark:bg-emerald-600 text-white font-semibold text-xs uppercase rounded-xl shadow-lg hover:scale-[1.01]"
+            >
+              Submit Review
             </button>
           </div>
         </div>
@@ -973,7 +1249,7 @@ export default function App() {
               </div>
               <nav className="space-y-1">
                 <button onClick={() => setViewMode('main')} className={`smooth-liquid-element w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${viewMode === 'main' || viewMode === 'artisan-detail' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Home className="w-4 h-4" /> Explore Hub</button>
-                <button onClick={() => setViewMode('bookings')} className={`smooth-liquid-element w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${viewMode === 'bookings' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Calendar className="w-4 h-4" /> Bookings</button>
+                <button onClick={() => setViewMode(currentUser?.role === 'artisan' ? 'jobs' : 'bookings')} className={`smooth-liquid-element w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${(viewMode === 'bookings' || viewMode === 'jobs') ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Calendar className="w-4 h-4" /> {currentUser?.role === 'artisan' ? 'My Jobs' : 'Bookings'}</button>
               </nav>
             </div>
             <div className="pt-4 border-t border-slate-800">
@@ -1095,6 +1371,33 @@ export default function App() {
                 </form>
                 <div className="text-center"><button type="button" onClick={() => setIsRegistering(!isRegistering)} className="text-xs font-bold text-emerald-600 hover:underline smooth-liquid-element">{isRegistering ? 'Already have an account? Sign In' : "Don't have an account? Create one"}</button></div>
               </div>
+
+              {/* DESKTOP BRANDING PANEL — fills the second lg:flex-row column so the login screen doesn't feel like empty space on wide monitors */}
+              <div className="hidden lg:flex flex-1 relative bg-slate-950 items-center justify-center overflow-hidden px-12">
+                <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative z-10 max-w-sm space-y-8">
+                  <Logo className="w-16 h-16 mix-blend-screen" />
+                  <div className="space-y-3">
+                    <h3 className="text-3xl font-bold tracking-tight leading-tight text-white">Find trusted trade professionals, fast.</h3>
+                    <p className="text-sm text-slate-400 leading-relaxed">Bereka connects you with verified plumbers, electricians, cleaners and more — all in one place.</p>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-slate-300">Verified, rated professionals near you</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <FaWhatsapp className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-slate-300">Message artisans directly on WhatsApp</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Calendar className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-slate-300">Book, track, and rate every job</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1104,7 +1407,8 @@ export default function App() {
             <nav className="liquid-glass absolute bottom-0 inset-x-0 border-t px-6 py-3 flex justify-between items-center text-slate-400 z-30 md:hidden border-slate-100 dark:border-slate-800">
               <button onClick={() => { setViewMode('main'); setExploreSubView('explore'); }} className={`flex flex-col items-center gap-1 text-[10px] smooth-liquid-element ${viewMode === 'main' && exploreSubView === 'explore' ? 'text-emerald-600' : ''}`}><Home className="w-5 h-5" /><span>List</span></button>
               <button onClick={() => { setViewMode('main'); setExploreSubView('nearby'); }} className={`flex flex-col items-center gap-1 text-[10px] smooth-liquid-element ${viewMode === 'main' && exploreSubView === 'nearby' ? 'text-emerald-600' : ''}`}><MapIcon className="w-5 h-5" /><span>Nearby</span></button>
-              <button onClick={() => setViewMode('bookings')} className={`flex flex-col items-center gap-1 text-[10px] smooth-liquid-element ${viewMode === 'bookings' ? 'text-emerald-600' : ''}`}><Calendar className="w-5 h-5" /><span>Bookings</span></button>
+              <button onClick={() => { setViewMode('main'); setExploreSubView('saved'); }} className={`flex flex-col items-center gap-1 text-[10px] smooth-liquid-element ${viewMode === 'main' && exploreSubView === 'saved' ? 'text-emerald-600' : ''}`}><Heart className="w-5 h-5" /><span>Saved</span></button>
+              <button onClick={() => setViewMode(currentUser?.role === 'artisan' ? 'jobs' : 'bookings')} className={`flex flex-col items-center gap-1 text-[10px] smooth-liquid-element ${(viewMode === 'bookings' || viewMode === 'jobs') ? 'text-emerald-600' : ''}`}><Calendar className="w-5 h-5" /><span>{currentUser?.role === 'artisan' ? 'Jobs' : 'Bookings'}</span></button>
               <button onClick={() => setIsProfileDrawerOpen(true)} className="flex flex-col items-center gap-1 text-[10px] smooth-liquid-element"><Settings className="w-5 h-5" /><span>Settings</span></button>
             </nav>
           )}
